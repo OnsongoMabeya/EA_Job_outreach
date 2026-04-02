@@ -1,0 +1,41 @@
+# Environment variables
+.env
+
+# Google Cloud credentials
+credentials.json
+
+# Generated data files
+raw_jobs.json
+validated_jobs.json
+ea_jobs_*.csv
+ea_jobs_*.xlsx
+
+# Logs
+*.log
+pipeline.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
