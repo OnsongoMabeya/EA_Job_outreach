@@ -215,7 +215,7 @@ git commit -m "Changes"
 
 **Commit Message Format:**
 
-```
+```bash
 <type>: <subject>
 
 <body (optional)>
@@ -224,6 +224,7 @@ git commit -m "Changes"
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
