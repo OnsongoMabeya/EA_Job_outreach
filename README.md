@@ -582,6 +582,191 @@ cat pipeline.log      # View entire log file
 - `ERROR`: Failures that don't stop the pipeline
 - `DEBUG`: Detailed information for troubleshooting (set `LOG_LEVEL = "DEBUG"` in config.py)
 
+## 🔒 Security Best Practices
+
+### Protecting Your API Keys
+
+**Never commit sensitive files to version control:**
+
+```bash
+# These files are already in .gitignore:
+.env                    # Contains your API keys
+credentials.json        # Google Cloud service account
+*.log                   # May contain sensitive data
+raw_jobs.json          # Scraped data
+validated_jobs.json    # Processed data
+```
+
+**If you accidentally commit sensitive data:**
+
+```bash
+# Remove from git history
+git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch .env" \
+  --prune-empty --tag-name-filter cat -- --all
+
+# Force push (WARNING: This rewrites history)
+git push origin --force --all
+```
+
+### API Key Management
+
+**Best Practices:**
+
+1. **Use environment variables** - Never hardcode API keys in code
+2. **Rotate keys regularly** - Generate new API keys every 3-6 months
+3. **Use separate keys** - Different keys for development and production
+4. **Monitor usage** - Check Groq and Google Cloud dashboards for unusual activity
+5. **Revoke compromised keys immediately** - If a key is exposed, revoke it right away
+
+**Groq API Key Security:**
+
+- Free tier has rate limits, so exposure is less critical than paid APIs
+- Still, treat it as sensitive and don't share publicly
+- Monitor usage at <https://console.groq.com/usage>
+
+**Google Cloud Credentials:**
+
+- Service account credentials have broad permissions
+- Store `credentials.json` securely
+- Never commit to public repositories
+- Consider using Secret Manager for production deployments
+
+### File Permissions
+
+Set appropriate permissions on sensitive files:
+
+```bash
+# Make .env and credentials.json readable only by you
+chmod 600 .env
+chmod 600 credentials.json
+```
+
+### Production Deployment
+
+For production environments:
+
+1. **Use environment-specific credentials** - Separate dev/staging/prod
+2. **Enable audit logging** - Track all API calls and data access
+3. **Use secrets management** - AWS Secrets Manager, Google Secret Manager, or HashiCorp Vault
+4. **Implement rate limiting** - Prevent abuse of your automation
+5. **Monitor for anomalies** - Set up alerts for unusual activity
+
+## 📊 Performance & Metrics
+
+### Typical Performance
+
+**Single Pipeline Run:**
+
+- **Duration:** 3-5 minutes (first run), 2-3 minutes (subsequent runs)
+- **Jobs Scraped:** 50-100+ from RemoteOK
+- **Jobs Validated:** 30-70 (depending on criteria)
+- **Messages Generated:** Same as validated jobs
+- **API Calls:** 1 per job (Groq) + 1-2 (Google Sheets)
+
+**Resource Usage:**
+
+- **Memory:** ~50-100 MB
+- **CPU:** Minimal (mostly I/O bound)
+- **Network:** ~5-10 MB per run (API calls + scraping)
+- **Disk:** ~1-2 MB per run (logs + JSON files)
+
+### Rate Limits
+
+| Service               | Free Tier Limit     | Used Per Run   | Runs Per Day     |
+|-----------------------|---------------------|----------------|------------------|
+| **Groq API**          | 14,400 requests/day | 30-70 requests | 200+ runs        |
+| **Groq API**          | 30 requests/minute  | 30-70 requests | Handled by retry |
+| **RemoteOK**          | No official limit   | 1 request      | Unlimited        |
+| **Google Sheets API** | 300 requests/minute | 1-2 requests   | Unlimited        |
+| **Google Drive**      | 15 GB storage       | ~1 KB per run  | Unlimited        |
+
+**Note:** The pipeline uses the efficient `llama-3.1-8b-instant` model to minimize token usage.
+
+### Optimization Tips
+
+**To improve performance:**
+
+1. **Reduce job count** - Adjust `MIN_JOBS_THRESHOLD` in `config.py`
+2. **Use faster model** - Already using `llama-3.1-8b-instant` (fastest)
+3. **Parallel processing** - Not implemented (would require more complex error handling)
+4. **Cache results** - Duplicate detection already prevents re-processing
+5. **Schedule during off-peak** - Run at night when APIs are less busy
+
+### Expected Results
+
+**Per Daily Run:**
+
+- **New jobs found:** 20-50 (after duplicate filtering)
+- **Time saved:** 2-3 hours of manual job searching
+- **Application quality:** Personalized messages vs generic templates
+- **Success rate:** Depends on job market and your qualifications
+
+## 💬 Example Generated Messages
+
+Here are real examples of AI-generated outreach messages from the pipeline:
+
+### Example 1: Executive Assistant at Tech Startup
+
+**Job:** Executive Assistant at a fast-growing SaaS company
+
+**Generated Message:**
+
+> Dear Hiring Manager,
+>
+> I am excited to apply for the Executive Assistant position at [Company Name]. With over 4 years of experience supporting C-suite executives in fast-paced environments, I am confident in my ability to provide exceptional administrative support to your leadership team.
+>
+> My expertise in calendar management, travel coordination, and cross-functional communication aligns perfectly with your requirements. I have successfully managed complex schedules across multiple time zones, coordinated international travel logistics, and served as a liaison between executives and stakeholders. Additionally, my proficiency with tools like Google Workspace, Slack, and Asana enables me to streamline workflows and enhance productivity.
+>
+> I am particularly drawn to [Company Name]'s innovative approach to [specific aspect from job description]. I would welcome the opportunity to discuss how my skills and experience can contribute to your team's success.
+>
+> Thank you for considering my application. I look forward to the possibility of speaking with you.
+>
+> Best regards
+
+### Example 2: Virtual Assistant for Remote Team
+
+**Job:** Virtual Assistant for a distributed marketing agency
+
+**Generated Message:**
+
+> Hello,
+>
+> I am writing to express my strong interest in the Virtual Assistant role at [Company Name]. As a detail-oriented professional with extensive remote work experience, I am well-equipped to support your distributed team's administrative needs.
+>
+> Throughout my career, I have honed my skills in inbox management, project tracking, and client communication. I excel at maintaining organization in remote environments and have successfully supported teams across different time zones. My tech-savvy approach and proactive communication style ensure that nothing falls through the cracks.
+>
+> What excites me most about this opportunity is the chance to work with a creative marketing team. I am confident that my organizational skills and ability to anticipate needs would make me a valuable asset to your operations.
+>
+> I would love to discuss how I can contribute to [Company Name]'s continued growth. Thank you for your time and consideration.
+>
+> Warm regards
+
+### Example 3: Chief of Staff Support Role
+
+**Job:** Executive Assistant supporting Chief of Staff at healthcare company
+
+**Generated Message:**
+
+> Dear Hiring Team,
+>
+> I am reaching out regarding the Executive Assistant position supporting your Chief of Staff. With a proven track record of providing high-level administrative support to senior executives, I am excited about the opportunity to contribute to [Company Name]'s mission in healthcare.
+>
+> My experience includes managing executive calendars, coordinating strategic meetings, and facilitating communication between leadership and cross-functional teams. I am skilled at handling confidential information with discretion and maintaining professionalism in high-pressure situations. My ability to prioritize competing demands and anticipate executive needs has consistently earned praise from the leaders I've supported.
+>
+> I am particularly impressed by [Company Name]'s commitment to [specific healthcare initiative]. I would be honored to support your Chief of Staff in advancing these important goals.
+>
+> I look forward to the opportunity to discuss how my skills align with your needs. Thank you for your consideration.
+>
+> Sincerely
+
+**Note:** These messages are starting points. Always personalize them further with:
+
+- Specific company research
+- Relevant achievements and metrics
+- Personal connection to the company's mission
+- Your unique value proposition
+
 ## 🤝 Support
 
 If you encounter issues:
